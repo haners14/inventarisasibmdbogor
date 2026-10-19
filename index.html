@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7f5">
+  <title>Inventaris Aset · Pemerintah Daerah</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="config.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#" aria-label="Inventaris Aset">
+        <span class="brand-mark">A</span>
+        <span><strong>INVENTARIS</strong><small>Barang Milik Daerah</small></span>
+      </a>
+      <div class="nav-label">MENU</div>
+      <button class="nav-item active" data-view="overview"><span class="nav-icon">▦</span> Ringkasan</button>
+      <button class="nav-item" data-view="kib"><span class="nav-icon">▧</span> Data KIB</button>
+      <button class="nav-item" data-view="assets"><span class="nav-icon">▤</span> Inventarisasi <span class="nav-count" id="navAssetCount">0</span></button>
+      <button class="nav-item" data-view="rooms"><span class="nav-icon">⌂</span> Ruangan</button>
+      <button class="nav-item" data-view="references"><span class="nav-icon">⌘</span> Referensi Kode Barang <span class="nav-count" id="referenceCount">0</span></button>
+      <button class="nav-item" data-view="recommendations"><span class="nav-icon">✧</span> Rekomendasi <span class="nav-count" id="recommendationCount">0</span></button>
+      <div class="sidebar-bottom">
+        <div class="local-card"><span class="local-dot" id="storageDot"></span><span><b id="storageTitle">Penyimpanan lokal</b><small id="storageDescription">Data tersimpan di perangkat ini</small></span></div>
+        <div class="sidebar-foot">INVENTARISASI<br>BARANG MILIK DAERAH</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="breadcrumb">BMD <span>/</span> <b id="crumb">Ringkasan</b></div>
+        <div class="top-actions"><span class="date-chip" id="today"></span><button class="icon-button" id="helpButton" aria-label="Bantuan">?</button></div>
+      </header>
+
+      <section class="page" id="overviewView">
+        <div class="page-heading">
+          <div><div class="eyebrow">PENGELOLAAN BARANG MILIK DAERAH</div><h1>Inventarisasi aset</h1><p class="subheading">Pantau data KIB dan catat kondisi aset terkini di setiap OPD.</p></div>
+          <button class="button primary" id="importButton"><span class="plus">＋</span> Impor data KIB</button>
+        </div>
+
+        <div class="notice"><span class="notice-icon">i</span><span>Data tersimpan di browser perangkat ini. Unduh cadangan berkala agar catatan inventaris tetap aman.</span><button class="text-button" id="restoreButton">Pulihkan cadangan</button><button class="text-button" id="exportButton">Unduh cadangan</button></div>
+
+        <div class="metric-grid">
+          <article class="metric-card"><div class="metric-top"><span>Total aset</span><span class="metric-icon mint">▤</span></div><strong id="totalMetric">0</strong><small>Barang dari seluruh KIB</small></article>
+          <article class="metric-card"><div class="metric-top"><span>Sudah diperiksa</span><span class="metric-icon blue">✓</span></div><strong id="checkedMetric">0</strong><small id="checkedNote">0% dari total aset</small></article>
+          <article class="metric-card"><div class="metric-top"><span>Perlu tindak lanjut</span><span class="metric-icon amber">!</span></div><strong id="followMetric">0</strong><small>Hilang atau kondisi rusak</small></article>
+          <article class="metric-card"><div class="metric-top"><span>Barcode belum dicatat</span><span class="metric-icon violet">▦</span></div><strong id="barcodeMetric">0</strong><small>KIB atau KIR belum diisi</small></article>
+        </div>
+
+        <div class="content-grid">
+          <section class="panel asset-panel">
+            <div class="panel-heading"><div><h2>Aset terbaru</h2><p>Periksa dan perbarui informasi aset.</p></div><button class="text-button" data-open-assets>Lihat semua <span>→</span></button></div>
+            <div class="table-wrap"><table><thead><tr><th>ASET</th><th>KODE BARANG</th><th>RUANGAN</th><th>KONDISI</th><th>STATUS</th></tr></thead><tbody id="recentRows"></tbody></table><div class="empty-state" id="recentEmpty"><span class="empty-icon">▤</span><b>Belum ada data aset</b><span>Impor file KIB untuk memulai inventarisasi.</span><button class="button secondary" data-trigger-import>Impor data KIB</button></div></div>
+          </section>
+          <section class="panel room-panel"><div class="panel-heading"><div><h2>Sebaran ruangan</h2><p>Jumlah aset per ruangan.</p></div><button class="text-button" data-view-link="rooms">Kelola <span>→</span></button></div><div id="roomSummary" class="room-summary"></div></section>
+        </div>
+
+        <section class="panel import-panel"><div class="import-symbol">⇧</div><div class="import-copy"><h2>Perbarui data KIB</h2><p>Impor file KIB A, B, EC, C, D, E, F, atau G. Catatan pemeriksaan tetap dipertahankan saat data KIB diperbarui.</p></div><button class="button secondary" data-trigger-import>Pilih file</button></section>
+      </section>
+
+      <section class="page hidden" id="kibView">
+        <div class="page-heading"><div><div class="eyebrow">DATA SUMBER ASET</div><h1>Data KIB</h1><p class="subheading">Data aset sesuai kelompok dan format KIB, dapat dipilah per OPD.</p></div><button class="button primary" data-trigger-import>＋ Impor data KIB</button></div>
+        <div class="filter-bar"><label class="search-box"><span>⌕</span><input id="kibSearchInput" type="search" placeholder="Cari nama, NIBAR, atau kode barang"></label><select id="kibOpdFilter"><option value="">Semua OPD</option></select><select id="kibTypeFilter"><option value="">Semua KIB</option><option value="A">KIB A · Tanah</option><option value="B">KIB B · Peralatan dan Mesin</option><option value="EC">KIB EC · Peralatan dan Mesin</option><option value="G">KIB G · Peralatan dan Mesin</option><option value="C">KIB C · Gedung/Bangunan</option><option value="D">KIB D · Jalan, Irigasi, Jaringan</option><option value="E">KIB E · Aset Tetap Lainnya</option><option value="F">KIB F · Konstruksi dalam Pengerjaan</option></select></div>
+        <section class="panel full-table-panel"><div class="table-wrap"><table><thead><tr><th>NAMA ASET / NIBAR</th><th>OPD</th><th>JENIS KIB</th><th>KODE BARANG</th><th>NO. REGISTER</th><th>ID</th><th>PEMAKAI</th><th>JUMLAH</th><th>NILAI</th><th></th></tr></thead><tbody id="kibRows"></tbody></table><div class="empty-state hidden" id="kibEmpty"><span class="empty-icon">▧</span><b id="kibEmptyTitle">Belum ada data KIB</b><span id="kibEmptyDesc">Impor data KIB dari file Excel.</span></div></div><div class="table-footer"><span id="kibResultCount">0 aset</span><span>Gunakan filter OPD untuk meninjau tiap unit kerja.</span></div></section>
+      </section>
+
+      <section class="page hidden" id="assetsView">
+        <div class="page-heading"><div><div class="eyebrow">DATA PEMERIKSAAN FISIK</div><h1>Inventarisasi</h1><p class="subheading">Cari aset per OPD, pilih ruangan, lalu catat hasil pemeriksaan fisik.</p></div><button class="button primary" data-trigger-import>＋ Impor data KIB</button></div>
+        <div class="filter-bar"><label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Cari nama, NIBAR, kode, atau pemakai"></label><select id="inventoryOpdFilter"><option value="">Semua OPD</option></select><select id="typeFilter"><option value="">Semua KIB</option><option value="A">KIB A</option><option value="B">KIB B</option><option value="EC">KIB EC</option><option value="G">KIB G</option><option value="C">KIB C</option><option value="D">KIB D</option><option value="E">KIB E</option><option value="F">KIB F</option></select><select id="roomFilter"><option value="">Semua ruangan</option></select><select id="statusFilter"><option value="">Semua status</option><option value="Belum diperiksa">Belum diperiksa</option><option value="Sesuai">Sesuai</option><option value="Dipindahkan">Dipindahkan</option><option value="Tidak ditemukan">Tidak ditemukan</option></select><button class="button secondary export-small" id="csvButton">Ekspor daftar</button></div>
+        <section class="panel full-table-panel"><div class="table-wrap"><table><thead><tr><th>ASET / NIBAR</th><th>KIB</th><th>KODE BARANG TERKINI</th><th>RUANGAN</th><th>KONDISI TERKINI</th><th>BARCODE KIB</th><th>BARCODE KIR</th><th>STATUS</th><th></th></tr></thead><tbody id="assetRows"></tbody></table><div class="empty-state" id="assetEmpty"><span class="empty-icon">⌕</span><b id="assetEmptyTitle">Aset tidak ditemukan</b><span id="assetEmptyDesc">Coba ubah kata kunci atau filter.</span></div></div><div class="table-footer"><span id="resultCount">0 aset</span><span>Pilih aset untuk memperbarui hasil pemeriksaan.</span></div></section>
+      </section>
+
+      <section class="page hidden" id="roomsView">
+        <div class="page-heading"><div><div class="eyebrow">MASTER LOKASI ASET</div><h1>Ruangan</h1><p class="subheading">Kelola ruangan lintas OPD; pilihan aset mengikuti OPD pemilik.</p></div><div class="heading-actions"><a class="button secondary" href="templates/template-upload-ruangan.xlsx" download>Unduh template</a><button class="button primary" id="importRoomsButton">↑ Impor ruangan</button></div></div>
+        <div class="filter-bar room-filter-bar"><select id="roomOpdFilter"><option value="">Semua OPD</option></select><span class="filter-hint" id="roomCountLabel"></span></div>
+        <section class="panel rooms-card"><div class="panel-heading"><div><h2>Daftar ruangan aktif</h2><p>Ruangan dikelompokkan berdasarkan OPD.</p></div><span class="active-tag" id="activeRoomCount">0 AKTIF</span></div><div class="room-list" id="roomList"></div><div class="empty-state hidden" id="roomEmpty"><span class="empty-icon">⌂</span><b>Belum ada ruangan</b><span>Unggah master ruangan dengan template.</span></div></section>
+      </section>
+
+      <section class="page hidden" id="referencesView">
+        <div class="page-heading"><div><div class="eyebrow">MASTER REFERENSI BARANG</div><h1>Referensi Kode Barang</h1><p class="subheading">Unggah kode dan nama/uraian barang untuk seluruh OPD.</p></div><div class="heading-actions"><a class="button secondary" href="templates/template-upload-referensi-kode-barang.xlsx" download>Unduh template</a><button class="button primary" id="importReferenceButton">↑ Impor referensi</button></div></div>
+        <div class="filter-bar"><label class="search-box"><span>⌕</span><input id="referenceSearch" type="search" placeholder="Cari kode, nama, atau uraian"></label><select id="referenceTypeFilter"><option value="">Semua KIB</option><option value="A">KIB A · Tanah</option><option value="B">KIB B · Peralatan dan Mesin</option><option value="EC">KIB EC · Peralatan dan Mesin</option><option value="G">KIB G · Peralatan dan Mesin</option><option value="C">KIB C · Gedung/Bangunan</option><option value="D">KIB D · Jalan, Irigasi, Jaringan</option><option value="E">KIB E · Aset Tetap Lainnya</option><option value="F">KIB F · Konstruksi dalam Pengerjaan</option></select><span class="filter-hint" id="referenceCountLabel"></span></div>
+        <section class="panel full-table-panel"><div class="table-wrap"><table><thead><tr><th>KODE BARANG</th><th>NAMA BARANG / URAIAN</th><th>JENIS KIB</th><th>SATUAN</th></tr></thead><tbody id="referenceRows"></tbody></table><div class="empty-state" id="referenceEmpty"><span class="empty-icon">⌘</span><b>Belum ada referensi kode barang</b><span>Unduh template, isi daftar kode dan uraian, lalu unggah.</span></div></div><div class="table-footer"><span id="referenceResultCount">0 referensi kode barang</span><span>Daftar referensi digunakan bersama seluruh OPD.</span></div></section>
+      </section>
+
+      <section class="page hidden" id="recommendationsView">
+        <div class="page-heading"><div><div class="eyebrow">TINDAK LANJUT PEMERIKSAAN</div><h1>Rekomendasi</h1><p class="subheading">Daftar aset yang perlu ditindaklanjuti, dipilah per OPD dan jenis rekomendasi.</p></div><button class="button primary" id="recommendationExportButton">↓ Unduh daftar</button></div>
+        <div class="recommendation-summary" id="recommendationSummary"></div>
+        <div class="filter-bar"><select id="recommendationOpdFilter"><option value="">Semua OPD</option></select><select id="recommendationTypeFilter"><option value="">Semua rekomendasi</option></select><label class="search-box"><span>⌕</span><input id="recommendationSearch" type="search" placeholder="Cari nama aset, NIBAR, atau kode"></label></div>
+        <section class="panel full-table-panel"><div class="table-wrap"><table><thead><tr><th>REKOMENDASI</th><th>ASET / NIBAR</th><th>OPD</th><th>RUANGAN</th><th>KONDISI KIB</th><th>KONDISI TERKINI</th><th>ALASAN</th><th></th></tr></thead><tbody id="recommendationRows"></tbody></table><div class="empty-state hidden" id="recommendationEmpty"><span class="empty-icon">✓</span><b>Tidak ada rekomendasi untuk filter ini</b><span>Ubah filter atau lengkapi hasil inventarisasi aset.</span></div></div><div class="table-footer"><span id="recommendationResultCount">0 aset</span><span>Konfirmasi hasil sebelum melakukan perubahan administrasi.</span></div></section>
+      </section>
+      <footer class="main-footer">Inventaris Barang Milik Daerah <span>•</span> Multi-OPD</footer>
+    </main>
+  </div>
+
+  <input type="file" id="kibFiles" accept=".xls,.xlsx,.xlsm" multiple hidden>
+  <input type="file" id="roomFiles" accept=".xls,.xlsx" hidden>
+  <input type="file" id="referenceFiles" accept=".xls,.xlsx,.csv" multiple hidden>
+  <input type="file" id="backupFile" accept=".json" hidden>
+  <div class="toast" id="toast" role="status"></div>
+
+  <dialog id="assetDialog" class="asset-dialog"><form method="dialog" id="assetForm"><div class="dialog-header"><div><div class="eyebrow">PEMERIKSAAN FISIK</div><h2 id="dialogTitle">Detail aset</h2><p id="dialogSubtitle"></p></div><button class="close-button" value="cancel" aria-label="Tutup">×</button></div><div class="dialog-body"><div class="source-summary" id="sourceSummary"></div><div class="form-grid"><label class="field span-2"><span>Kode barang terkini</span><input name="currentCode" placeholder="Kode barang"></label><label class="field"><span>Ruangan</span><select name="room"><option value="">Pilih ruangan</option></select></label><label class="field"><span>Status pemeriksaan</span><select name="inventoryStatus"><option value="Belum diperiksa">Belum diperiksa</option><option value="Sesuai">Sesuai</option><option value="Dipindahkan">Dipindahkan</option><option value="Tidak ditemukan">Tidak ditemukan</option></select></label><label class="field"><span>Kondisi terkini</span><select name="conditionCurrent"><option value="">Pilih kondisi</option><option>Baik</option><option>Kurang Baik</option><option>Rusak Ringan</option><option>Rusak Berat</option></select></label><label class="field"><span>Barcode KIB</span><select name="barcodeKib"><option value="">Belum dicatat</option><option value="Tersedia">Tersedia</option><option value="Tidak tersedia">Tidak tersedia</option></select></label><label class="field"><span>Barcode KIR</span><select name="barcodeKir"><option value="">Belum dicatat</option><option value="Tersedia">Tersedia</option><option value="Tidak tersedia">Tidak tersedia</option></select></label><label class="field span-2"><span>Spesifikasi terkini</span><textarea name="specsCurrent" rows="3" placeholder="Merek, tipe, ukuran, bahan, atau nomor seri"></textarea></label><label class="field span-2"><span>Catatan pemeriksaan</span><textarea name="notes" rows="3" placeholder="Catatan kondisi, pemegang, atau tindak lanjut"></textarea></label><label class="field span-2"><span>Foto aset <small>(opsional)</small></span><input name="photo" type="file" accept="image/*"><div class="photo-preview" id="photoPreview"></div></label></div></div><div class="dialog-footer"><button class="button secondary" value="cancel">Batal</button><button class="button primary" id="saveAsset" value="default">Simpan pemeriksaan</button></div></form></dialog>
+  <dialog id="importDialog" class="import-dialog"><form method="dialog" id="importForm"><div class="dialog-header"><div><div class="eyebrow">IMPOR DATA</div><h2>Impor file KIB</h2><p>Gunakan format sesuai jenis aset.</p></div><button class="close-button" value="cancel" aria-label="Tutup">×</button></div><div class="dialog-body"><div class="drop-zone"><span class="upload-icon">⇧</span><b>File Excel KIB</b><span>Unggah file standar KIB A, B, EC, C, D, E, F, atau G, atau template lintas OPD.</span><button type="button" class="button secondary" id="chooseFiles">Pilih file</button><div id="selectedFiles" class="selected-files">Belum ada file dipilih.</div><a class="text-button template-link" href="templates/template-upload-kib.xlsx" download>Unduh template KIB</a></div><p class="import-note">Template memiliki sheet terpisah dengan kolom sesuai tiap jenis KIB. Saat impor ulang, catatan pemeriksaan tetap melekat pada aset yang sama.</p></div><div class="dialog-footer"><button class="button secondary" value="cancel">Batal</button><button class="button primary" id="startImport" value="default" disabled>Impor aset</button></div></form></dialog>
+  <dialog id="referenceImportDialog" class="import-dialog"><form method="dialog"><div class="dialog-header"><div><div class="eyebrow">IMPOR REFERENSI</div><h2>Unggah kode barang</h2><p>Daftar kode dapat digunakan untuk semua OPD.</p></div><button class="close-button" value="cancel" aria-label="Tutup">×</button></div><div class="dialog-body"><div class="drop-zone"><span class="upload-icon">⇧</span><b>File Excel atau CSV</b><span>Wajib berisi kolom Kode Barang dan Nama Barang/Uraian.</span><button type="button" class="button secondary" id="chooseReferenceFile">Pilih file</button><div id="selectedReferenceFiles" class="selected-files">Belum ada file dipilih.</div><a class="text-button template-link" href="templates/template-upload-referensi-kode-barang.xlsx" download>Unduh template referensi</a></div><p class="import-note">Kolom Jenis KIB, Satuan, dan Keterangan bersifat opsional. Kode yang sama akan diperbarui saat diunggah kembali.</p></div><div class="dialog-footer"><button class="button secondary" value="cancel">Batal</button><button class="button primary" id="startReferenceImport" value="default" disabled>Impor referensi</button></div></form></dialog>
+  <dialog id="helpDialog" class="help-dialog"><form method="dialog"><div class="dialog-header"><div><div class="eyebrow">TENTANG APLIKASI</div><h2>Inventaris Aset</h2></div><button class="close-button" value="close" aria-label="Tutup">×</button></div><div class="dialog-body"><p>Aplikasi ini menyimpan data di browser perangkat ini tanpa akun. Impor KIB dan master ruangan untuk OPD yang dikelola, lalu catat hasil pemeriksaan aset.</p><p>Gunakan <b>Unduh cadangan</b> untuk menyimpan seluruh catatan dan foto dalam file JSON. Format file KIR akan ditambahkan setelah contoh formatnya tersedia.</p></div><div class="dialog-footer"><button class="button primary" value="close">Mengerti</button></div></form></dialog>
+</body>
+</html>
